@@ -45,9 +45,12 @@ namespace GA_Nerual_LogicGates
 		static void Main(string[] args)
         {
 			GARandomManager.Random = new RandomClassic((int)DateTime.Now.Ticks);
-			var socketProxy = new SocketProxy(false);
+			var neuralNetDrawer = new NeuralNetDrawer(false);
 			var fitnessCollector = new GraphDataCollector();
-         
+
+			NeuralGenomeToJSONExtension.distBetweenNodes *= 5;
+			NeuralGenomeToJSONExtension.randomPosTries = 10;
+
 			var program = new Program();
 
 			for (var i = 0; i < maxIterations; i++)
@@ -69,7 +72,7 @@ namespace GA_Nerual_LogicGates
 					fintessSum));
 
 				if (i % 1 == 0)
-				    socketProxy.SendStrMsg(best.ToJson(
+					neuralNetDrawer.QueueNeuralNetJson(best.ToJson(
 						neuronRadius: 0.02f,
 						maxWeight: 3,
 						edgeWidth: 1f));

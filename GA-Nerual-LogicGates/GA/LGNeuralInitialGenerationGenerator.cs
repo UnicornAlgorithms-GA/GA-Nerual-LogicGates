@@ -83,8 +83,8 @@ namespace GANerualLogicGates.GA
 		}
 
 		private List<Synapse> Connect(
-			IEnumerable<InputNeuron> inputs,
-			IEnumerable<OutputNeuron> outputs,
+			IEnumerable<Neuron> inputs,
+			IEnumerable<Neuron> outputs,
 			BiasNeuron biasNeuron,
 			List<Neuron[]> hiddenLayers)
 		{
@@ -93,6 +93,7 @@ namespace GANerualLogicGates.GA
 			layers.Add(inputs);
 			layers.AddRange(hiddenLayers);
 			layers.Add(outputs);
+			layers = layers.Where(x => x.Any()).ToList();
 
 			var synapses = ConnectLayers(layers).ToList();
 
@@ -108,7 +109,7 @@ namespace GANerualLogicGates.GA
 		}
 
 		private IEnumerable<Synapse> ConnectLayers(IEnumerable<IEnumerable<Neuron>> layers)
-		{         
+		{
 			var prevLayer = layers.First();
 			foreach (var layer in layers.Skip(1))
 			{
