@@ -11,14 +11,12 @@ using GeneticLib.Neurology.Synapses;
 
 namespace GANerualLogicGates.GA
 {
-	public class LGNeuralInitialGenerationGenerator : InitialGenerationCreatorBase
+	public class LGNeuralInitialGenerationGenerator : NeuralInitialGenerationCreatorBase
     {
-		public SynapseInnovNbTracker SynapseInnovNbTracker { get; set; }
 		public int Inputs { get; set; }
 		public int Outputs { get; set; }
 		public int[] HiddenLayers { get; set; }
 		public bool BiasEnabled { get; set; }
-		public Func<float> RandomWeightFunc { get; set; }
 
         public LGNeuralInitialGenerationGenerator(
 			SynapseInnovNbTracker synapseInnovNbTracker,
@@ -27,13 +25,12 @@ namespace GANerualLogicGates.GA
 		    int[] hiddenLayers,         
 			Func<float> randomWeightFunc,
 			bool biasEnabled = true)
+			: base(synapseInnovNbTracker, randomWeightFunc)
         {
-			this.SynapseInnovNbTracker = synapseInnovNbTracker;
 			Inputs = inputs;
 			Outputs = outputs;
 			HiddenLayers = hiddenLayers;
 			BiasEnabled = biasEnabled;
-			RandomWeightFunc = randomWeightFunc;
         }
 
 		protected override IGenome NewRandomGenome()
@@ -106,48 +103,6 @@ namespace GANerualLogicGates.GA
 			}
 
 			return synapses;
-		}
-
-		private IEnumerable<Synapse> ConnectLayers(IEnumerable<IEnumerable<Neuron>> layers)
-		{
-			var prevLayer = layers.First();
-			foreach (var layer in layers.Skip(1))
-			{
-				foreach (var n1 in prevLayer)
-				{
-					foreach (var n2 in layer)
-					{
-						var innovNb = this.SynapseInnovNbTracker.GetHystoricalMark(
-							n1.InnovationNb,
-							n2.InnovationNb);
-
-						var synapse = new Synapse(
-							innovNb,
-							RandomWeightFunc(),
-							n1.InnovationNb,
-							n2.InnovationNb);
-
-						yield return synapse;
-					}
-				}
-				prevLayer = layer;
-			}
-		}
-
-		private IEnumerable<Synapse> ConnectNeuronToLayer(         
-            Neuron targetNeuron,
-			IEnumerable<Neuron> layer)
-		{
-			foreach (var neuron in layer)
-			{
-				yield return new Synapse(
-					this.SynapseInnovNbTracker.GetHystoricalMark(
-						targetNeuron.InnovationNb,
-						neuron.InnovationNb),
-					RandomWeightFunc(),
-					targetNeuron.InnovationNb,
-					neuron.InnovationNb);
-			}
 		}
 	}
 }
