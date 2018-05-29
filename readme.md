@@ -1,19 +1,19 @@
 ### Logic gates with Neural Nets evolved with Genetic Algorithms
 
 <center>
-  ![meme](./aux/logic-gates-with-neural-nets.jpg)
+  <img src="./aux/logic-gates-with-neural-nets.jpg">meme</img>
 </center>
 
 #### Evolution of the neural net
 <center>
-  ![gif-net-evolve.gif](./aux/gif-net-evolve.gif)
+  <img src="./aux/gif-net-evolve.gif">gif</img>
 </center>
 
 The network has 2 inputs (I), 1 bias (B), 1 output (O) with sigmoid, and only one hidden neuron with Gaussian activation. This network solves the XOR logic gate.
 
 #### Fitness
 <center>
-  ![fitness](./aux/fitness.png)
+  <img src="./aux/fitness.png">fitness</img>
 </center>
 
 #### Technical notes
