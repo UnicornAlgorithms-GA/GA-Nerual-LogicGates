@@ -71,14 +71,14 @@ namespace GANerualLogicGates.GA
 			);
 
 			var allNeurons = inputNeurons.Concat(hiddenLayers.SelectMany(x => x))
-			                             .Concat(outputNeurons)
-			                             .Concat(new[] { biasNeuron });
+										 .Concat(outputNeurons);
+			if (BiasEnabled)
+				allNeurons = allNeurons.Concat(new[] { biasNeuron });
 
 			var genome = new NeuralGenome(
 				allNeurons.ToDictionary(x => x.InnovationNb, x => x),
 				synapses.Select(x => new NeuralGene(x.Clone())).ToArray());
-
-            //Neurons are not getting the right innov nb... wtf!?!?!?!!!?!?!?
+			
 			return genome;
 		}
 

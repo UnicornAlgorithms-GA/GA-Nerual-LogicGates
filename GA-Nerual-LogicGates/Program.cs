@@ -28,24 +28,26 @@ namespace GA_Nerual_LogicGates
     {            
         int genomesCount = 50;
 
-		float singleSynapseMutChance = 0.4f;
-		float singleSynapseMutValue = 1f;
+		float singleSynapseMutChance = 0.2f;
+		float singleSynapseMutValue = 3f;
         
 		float allSynapsesMutChance = 0.1f;
-		float allSynapsesMutChanceEach = 0.5f;
-		float allSynapsesMutValue = 0.1f;
+		float allSynapsesMutChanceEach = 1f;
+		float allSynapsesMutValue = 1f;
         
         float crossoverPart = 0.80f;
         float reinsertionPart = 0.2f;
 
         GeneticManagerClassic geneticManager;
-        public static int maxIterations = 2000;
+        public static int maxIterations = 200;
 		public static bool targetReached = false;
       
 		static void Main(string[] args)
         {
 			GARandomManager.Random = new RandomClassic((int)DateTime.Now.Ticks);
-			var socketProxy = new SocketProxy(false);      
+			var socketProxy = new SocketProxy(false);
+			var fitnessCollector = new GraphDataCollector();
+         
 			var program = new Program();
 
 			for (var i = 0; i < maxIterations; i++)
@@ -59,19 +61,23 @@ namespace GA_Nerual_LogicGates
 				                        .CurrentGeneration
 				                        .Genomes.Sum(x => x.Fitness);
 				var best = program.BestGenome() as NeuralGenome;
-
-				Console.WriteLine("Genes: " + best.Genes.Count());
+				fitnessCollector.Tick(i, best.Fitness);
 				Console.WriteLine(String.Format(
 					"{0}) Best:{1:0.00} Sum:{2:0.00}",
 					i,
 					best.Fitness,
 					fintessSum));
 
-				if (i % 200 == 0)
-				    socketProxy.SendStrMsg(best.ToJson());
+				if (i % 1 == 0)
+				    socketProxy.SendStrMsg(best.ToJson(
+						neuronRadius: 0.02f,
+						maxWeight: 3,
+						edgeWidth: 1f));
 
 				program.Evolve();            
-			}         
+			}
+
+			fitnessCollector.Draw();
         }
 
 		public Program()
@@ -83,7 +89,8 @@ namespace GA_Nerual_LogicGates
                 2,
                 1,
                 new[] { 1 },
-                () => (float)GARandomManager.Random.NextDouble(-1, 1));
+                () => (float)GARandomManager.Random.NextDouble(-1, 1),
+				true);
             
             var selection = new EliteSelection();
             var crossover = new OnePointCrossover(true);
@@ -148,18 +155,17 @@ namespace GA_Nerual_LogicGates
 					fitness -= delta * gradient;
 				}
 			}
-			//Console.WriteLine("");
 			return (float)fitness;
 		}
 
 		private MutationManager InitMutations()
 		{
 			var result = new MutationManager();
-			//result.MutationEntries.Add(new MutationEntry(
-			//	new SingleSynapseWeightMutation(() => singleSynapseMutValue),
-			//	singleSynapseMutChance,
-			//	EMutationType.Independent
-			//));
+			result.MutationEntries.Add(new MutationEntry(
+				new SingleSynapseWeightMutation(() => singleSynapseMutValue),
+				singleSynapseMutChance,
+				EMutationType.Independent
+			));
 
 			result.MutationEntries.Add(new MutationEntry(
 				new AllSynapsesWeightMutation(
