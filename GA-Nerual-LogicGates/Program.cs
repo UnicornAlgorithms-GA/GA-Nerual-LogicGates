@@ -20,6 +20,7 @@ using GeneticLib.GenomeFactory.Mutation.NeuralMutations;
 using GeneticLib.Neurology;
 using GeneticLib.Neurology.NeuralModels;
 using GeneticLib.Neurology.Neurons;
+using GeneticLib.Neurology.NeuronValueModifiers;
 using GeneticLib.Randomness;
 using GeneticLib.Utils.Graph;
 using GeneticLib.Utils.NeuralUtils;
@@ -36,7 +37,7 @@ namespace GA_Nerual_LogicGates
         int genomesCount = 50;
 
 		float singleSynapseMutChance = 0.2f;
-		float singleSynapseMutValue = 3f;
+		float singleSynapseMutValue = 1f;
         
 		float allSynapsesMutChance = 0.1f;
 		float allSynapsesMutChanceEach = 1f;
@@ -46,7 +47,7 @@ namespace GA_Nerual_LogicGates
         float reinsertionPart = 0.2f;
 
         GeneticManagerClassic geneticManager;
-        public static int maxIterations = 2000;
+        public static int maxIterations = 20000;
 		public static bool targetReached = false;
       
 		static void Main(string[] args)
@@ -68,7 +69,7 @@ namespace GA_Nerual_LogicGates
 			NeuralGenomeToJSONExtension.randomPosTries = 10;
 
 			var program = new Program();
-
+                
 			for (var i = 0; i < maxIterations; i++)
 			{
 				if (targetReached)
@@ -90,7 +91,7 @@ namespace GA_Nerual_LogicGates
 				if (i % 1 == 0)
 					neuralNetDrawer.QueueNeuralNetJson(best.ToJson(
 						neuronRadius: 0.02f,
-						maxWeight: 3,
+						maxWeight: 7,
 						edgeWidth: 1f));
 
 				program.Evolve();            
@@ -165,7 +166,7 @@ namespace GA_Nerual_LogicGates
 					genome.FeedNeuralNetwork(new float[] { i, j });
 					var output = genome.Outputs.Select(x => x.Value).First();
 
-					var targetValue = i | j;
+					var targetValue = i ^ j;
 					var delta = Math.Abs(targetValue - output);
 					var gradient = (i == j && i == 1) ? 5 : 1;
 					fitness -= delta * gradient;
@@ -181,15 +182,17 @@ namespace GA_Nerual_LogicGates
 		private INeuralModel InitModel()
 		{
 			var model = new NeuralModelBase();
+			model.defaultWeightInitializer = () => GARandomManager.NextFloat(-3, 3);
+			model.WeightConstraints = new Tuple<float, float>(-20, 20);
 
 			var bias = model.AddBiasNeuron();
 			var layers = new[]
 			{
 				model.AddInputNeurons(2).ToArray(),
 				model.AddNeurons(
-					sampleNeuron: new Neuron(-1, ActivationFunctions.TanH),
-					count: 1
-				).ToArray(),
+					sampleNeuron: new Neuron(-1, ActivationFunctions.Gaussian),
+                    count: 1
+                ).ToArray(),
 				model.AddOutputNeurons(1, ActivationFunctions.Sigmoid).ToArray()
 			};
 
@@ -207,6 +210,12 @@ namespace GA_Nerual_LogicGates
 				singleSynapseMutChance,
 				EMutationType.Independent
 			));
+            
+            result.MutationEntries.Add(new MutationEntry(
+                new SingleSynapseWeightMutation(() => singleSynapseMutValue * 5),
+                singleSynapseMutChance / 5,
+                EMutationType.Independent
+            ));
 
 			result.MutationEntries.Add(new MutationEntry(
 				new AllSynapsesWeightMutation(
