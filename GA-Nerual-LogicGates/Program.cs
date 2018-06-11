@@ -2,22 +2,24 @@
 #pragma warning disable 0414
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using GANerualLogicGates.GA;
 using GeneticLib.Generations;
+using GeneticLib.Generations.InitialGeneration;
 using GeneticLib.GeneticManager;
 using GeneticLib.Genome;
 using GeneticLib.Genome.NeuralGenomes;
+using GeneticLib.Genome.NeuralGenomes.NetworkOperationBakers;
 using GeneticLib.GenomeFactory;
 using GeneticLib.GenomeFactory.GenomeProducer;
 using GeneticLib.GenomeFactory.GenomeProducer.Breeding;
 using GeneticLib.GenomeFactory.GenomeProducer.Breeding.Crossover;
-using GeneticLib.GenomeFactory.GenomeProducer.Breeding.Selection;
 using GeneticLib.GenomeFactory.GenomeProducer.Reinsertion;
+using GeneticLib.GenomeFactory.GenomeProducer.Selection;
 using GeneticLib.GenomeFactory.Mutation;
 using GeneticLib.GenomeFactory.Mutation.NeuralMutations;
 using GeneticLib.Neurology;
+using GeneticLib.Neurology.NeuralModels;
+using GeneticLib.Neurology.Neurons;
 using GeneticLib.Randomness;
 using GeneticLib.Utils.Graph;
 using GeneticLib.Utils.NeuralUtils;
@@ -25,7 +27,12 @@ using GeneticLib.Utils.NeuralUtils;
 namespace GA_Nerual_LogicGates
 {
 	class Program
-    {            
+    {
+		private static readonly string pyNeuralNetGraphDrawerPath =
+			"../MachineLearningPyGraphUtils/PyNeuralNetDrawer.py";
+        private static readonly string pyFitnessGraphPath =
+            "../MachineLearningPyGraphUtils/DrawGraph.py";
+
         int genomesCount = 50;
 
 		float singleSynapseMutChance = 0.2f;
@@ -39,12 +46,21 @@ namespace GA_Nerual_LogicGates
         float reinsertionPart = 0.2f;
 
         GeneticManagerClassic geneticManager;
-        public static int maxIterations = 200;
+        public static int maxIterations = 2000;
 		public static bool targetReached = false;
       
 		static void Main(string[] args)
         {
 			GARandomManager.Random = new RandomClassic((int)DateTime.Now.Ticks);
+
+			NeuralGenomeToJSONExtension.distBetweenNodes *= 5;
+            NeuralGenomeToJSONExtension.randomPosTries = 10;
+            NeuralGenomeToJSONExtension.xPadding = 0.03f;
+            NeuralGenomeToJSONExtension.yPadding = 0.03f;
+
+			NeuralNetDrawer.pyGraphDrawerPath = pyNeuralNetGraphDrawerPath;
+			PyDrawGraph.pyGraphDrawerFilePath = pyFitnessGraphPath;
+
 			var neuralNetDrawer = new NeuralNetDrawer(false);
 			var fitnessCollector = new GraphDataCollector();
 
@@ -87,13 +103,9 @@ namespace GA_Nerual_LogicGates
 		{
 			var synapseTracker = new SynapseInnovNbTracker();
 
-            var initialGenerationGenerator = new LGNeuralInitialGenerationGenerator(
-                synapseTracker,
-                2,
-                1,
-                new[] { 1 },
-                () => (float)GARandomManager.Random.NextDouble(-1, 1),
-				true);
+			var initialGenerationGenerator = new NeuralInitialGenerationCreatorBase(
+				InitModel(),
+				new RecursiveNetworkOpBaker());
             
             var selection = new EliteSelection();
             var crossover = new OnePointCrossover(true);
@@ -105,7 +117,8 @@ namespace GA_Nerual_LogicGates
 				InitMutations()
             );
 
-			var reinsertion = new EliteReinsertion(reinsertionPart, 0);
+			var reinsertion = new ReinsertionFromSelection(
+				reinsertionPart, 0, new EliteSelection());
 			var producers = new IGenomeProducer[] { breeding, reinsertion };
 			var genomeForge = new GenomeForge(producers);
 
@@ -152,13 +165,38 @@ namespace GA_Nerual_LogicGates
 					genome.FeedNeuralNetwork(new float[] { i, j });
 					var output = genome.Outputs.Select(x => x.Value).First();
 
-					var targetValue = i ^ j;
+					var targetValue = i | j;
 					var delta = Math.Abs(targetValue - output);
 					var gradient = (i == j && i == 1) ? 5 : 1;
 					fitness -= delta * gradient;
 				}
 			}
+
+			if (fitness >= -0.01f)
+				targetReached = true;
+
 			return (float)fitness;
+		}
+
+		private INeuralModel InitModel()
+		{
+			var model = new NeuralModelBase();
+
+			var bias = model.AddBiasNeuron();
+			var layers = new[]
+			{
+				model.AddInputNeurons(2).ToArray(),
+				model.AddNeurons(
+					sampleNeuron: new Neuron(-1, ActivationFunctions.TanH),
+					count: 1
+				).ToArray(),
+				model.AddOutputNeurons(1, ActivationFunctions.Sigmoid).ToArray()
+			};
+
+			model.ConnectBias(bias, layers.Skip(1));
+			model.ConnectLayers(layers);
+
+			return model;
 		}
 
 		private MutationManager InitMutations()

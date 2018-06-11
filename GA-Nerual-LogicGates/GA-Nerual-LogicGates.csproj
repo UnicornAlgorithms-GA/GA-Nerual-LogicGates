@@ -9,6 +9,6 @@
     <ProjectReference Include="..\GeneticLib\GeneticLib\GeneticLib.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="GA\" />
+    <Compile Remove="GA\LGNeuralInitialGenerationGenerator.cs" />
   </ItemGroup>
 </Project>
