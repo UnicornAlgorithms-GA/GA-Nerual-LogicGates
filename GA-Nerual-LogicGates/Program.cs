@@ -88,15 +88,13 @@ namespace GA_Nerual_LogicGates
 					best.Fitness,
 					fintessSum));
 
-				if (i % 1 == 0)
-					neuralNetDrawer.QueueNeuralNetJson(best.ToJson(
-						neuronRadius: 0.02f,
-						maxWeight: 7,
-						edgeWidth: 1f));
-
 				program.Evolve();            
 			}
 
+			neuralNetDrawer.QueueNeuralNetJson((program.BestGenome() as NeuralGenome).ToJson(
+                neuronRadius: 0.02f,
+                maxWeight: 7,
+                edgeWidth: 1f));
 			fitnessCollector.Draw();
         }
 
@@ -107,8 +105,9 @@ namespace GA_Nerual_LogicGates
 			var initialGenerationGenerator = new NeuralInitialGenerationCreatorBase(
 				InitModel(),
 				new RecursiveNetworkOpBaker());
-            
-            var selection = new EliteSelection();
+
+			//var selection = new EliteSelection();
+			var selection = new RouletteWheelSelectionWithRepetion();
             var crossover = new OnePointCrossover(true);
             var breeding = new BreedingClassic(
 				crossoverPart,
