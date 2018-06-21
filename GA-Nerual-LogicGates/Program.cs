@@ -63,13 +63,13 @@ namespace GA_Nerual_LogicGates
 			PyDrawGraph.pyGraphDrawerFilePath = pyFitnessGraphPath;
 
 			var neuralNetDrawer = new NeuralNetDrawer(false);
-			var fitnessCollector = new GraphDataCollector();
+			//var fitnessCollector = new GraphDataCollector();
 
 			NeuralGenomeToJSONExtension.distBetweenNodes *= 5;
 			NeuralGenomeToJSONExtension.randomPosTries = 10;
 
 			var program = new Program();
-                
+
 			for (var i = 0; i < maxIterations; i++)
 			{
 				if (targetReached)
@@ -81,7 +81,7 @@ namespace GA_Nerual_LogicGates
 				                        .CurrentGeneration
 				                        .Genomes.Sum(x => x.Fitness);
 				var best = program.BestGenome() as NeuralGenome;
-				fitnessCollector.Tick(i, best.Fitness);
+				//fitnessCollector.Tick(i, best.Fitness);
 				Console.WriteLine(String.Format(
 					"{0}) Best:{1:0.00} Sum:{2:0.00}",
 					i,
@@ -95,7 +95,7 @@ namespace GA_Nerual_LogicGates
                 neuronRadius: 0.02f,
                 maxWeight: 7,
                 edgeWidth: 1f));
-			fitnessCollector.Draw();
+			//fitnessCollector.Draw();
         }
 
 		public Program()
@@ -144,8 +144,10 @@ namespace GA_Nerual_LogicGates
                                         .CurrentGeneration
                                         .Genomes;
 
-            foreach (var genome in genomes)
-                genome.Fitness = ComputeFitness(genome as NeuralGenome);
+			foreach (var genome in genomes)
+			{
+				genome.Fitness = ComputeFitness(genome as NeuralGenome);
+			}
 
             var orderedGenomes = genomes.OrderByDescending(g => g.Fitness)
                                         .ToArray();
@@ -157,6 +159,7 @@ namespace GA_Nerual_LogicGates
 
 		private float ComputeFitness(NeuralGenome genome)
 		{
+			genome.NetworkOperationBaker.BakeNetwork(genome);
 			var fitness = 0d;
 			for (var i = 0; i < 2; i++)
 			{
